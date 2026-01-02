@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Spiral Container Generator</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+        <style>
+            #canvas-container { height: 600px; width: 100%; background: #0f172a; border-radius: 12px; position: relative; }
+            .setting-card { background: #2d3748; padding: 1rem; border-radius: 8px; border: 1px solid #4a5568; margin-bottom: 1rem; }
+            label { display: block; font-size: 0.8rem; font-weight: 650; color: #f3f4f6; margin-bottom: 2px; cursor: help; }
+            input, select, textarea { width: 100%; padding: 0.25rem !important; border: 1px solid #4a5568; border-radius: 4px; font-size: 0.875rem; background: #1a202c; color: #f3f4f6; }
+            textarea { font-family: monospace; font-size: 10px; height: 200px; resize: none !important; }
+            textarea::-webkit-scrollbar { width: 8px; }
+            textarea::-webkit-scrollbar-track { background: #1a202c; }
+            textarea::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 4px; }
+            textarea::-webkit-scrollbar-thumb:hover { background: #64748b; }
+            .section-title { font-size: 1rem; font-weight: 650; color: #f3f4f6; margin-bottom: 0.75rem; border-bottom: 2px solid #ef4444; }
+            .stat-val { font-family: monospace; color: #f3f4f6; font-weight: 650; }
+        </style>
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23ef4444'><path d='M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492M5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0'/><path d='M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115z'/></svg>" type="image/svg+xml">
+    </head>
+    <body class="bg-gray-800 text-gray-100">
+        <div class="max-w-[1600px] mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div class="lg:col-span-4 space-y-4">
+                <div class="bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-700">
+                    <h1 class="text-xl font-bold text-[#f3f4f6]">SPIRAL CONTAINER GENERATOR</h1>
+                    <p class="text-sm text-gray-300 mt-2 text-justify">Generate customizable spiral vase G-code for your 3D printer. Created by Stijns Projects, <a href="https://github.com/stijnsprojects/spiral-container-generator" target="_blank" class="text-gray-300 hover:text-blue-500 underline">available</a> under a CC BY-NC-SA 4.0 license.</p>
+                </div>
+
+                <div class="setting-card">
+                    <div class="section-title">Geometry</div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="input-group"><label title="Outer diameter of the container [mm]">Diameter [mm]</label><input type="number" id="diameter" value="50" oninput="autoUpdate()"></div>
+                        <div class="input-group"><label title="Total height of the container [mm]">Height [mm]</label><input type="number" id="height" value="30" oninput="autoUpdate()"></div>
+                        <div class="input-group"><label title="Radius of the bottom fillet fillet [mm]">Fillet Radius [mm]</label><input type="number" id="fillet_radius" value="2" step="0.25" oninput="autoUpdate()"></div>
+                        <div class="input-group"><label title="Volume of plastic deposited at the very center to ensure a leak-proof start [mm³]">Center Fill [mm³]</label><input type="number" id="center_fill_amount" value="3.5" step="0.1" oninput="autoUpdate()"></div>
+                    </div>
+                </div>
+
+                <div class="setting-card">
+                    <div class="section-title">Layers & Flow</div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="input-group"><label title="Height of each spiral layer [mm]">Layer Height [mm]</label><input type="number" id="layer_height" value="1.5" step="0.1" oninput="autoUpdate()"></div>
+                        <div class="input-group"><label title="Target width of the extruded line [mm]">Line Width [mm]</label><input type="number" id="line_width" value="4.0" step="0.1" oninput="autoUpdate()"></div>
+                        <div class="input-group"><label title="Height of the first layer [mm]">1st Layer Height [mm]</label><input type="number" id="first_layer_height" value="1.5" step="0.1" oninput="autoUpdate()"></div>
+                        <div class="input-group"><label title="Line width specifically for the first layer [mm]">1st Layer Line Width [mm]</label><input type="number" id="first_layer_line_width" value="4.0" step="0.1" oninput="autoUpdate()"></div>
+                        <div class="input-group"><label title="Global flow rate multiplier [%]">Flow Rate [%]</label><input type="number" id="flow_rate" value="102" oninput="autoUpdate()"></div>
+                        <div class="input-group"><label title="Flow rate multiplier for the first layer [%]">1st Layer Flow Rate [%]</label><input type="number" id="first_layer_flow_rate" value="104" oninput="autoUpdate()"></div>
+                    </div>
+                </div>
+
+                <div class="setting-card">
+                    <div class="section-title">Limits & Fans</div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="input-group"><label title="Maximum allowed volumetric flow rate [mm³/s]">Flow Limit [mm³/s]</label><input type="number" id="flow_limit" value="15" oninput="autoUpdate()"></div>
+                        <div class="input-group"><label title="Maximum allowed travel speed [mm/s]">Velocity Limit [mm/s]</label><input type="number" id="velocity_limit" value="50" oninput="autoUpdate()"></div>
+                        <div class="input-group"><label title="Fan speed at the start of the first layer [%]">1st Layer Fan [%]</label><input type="number" id="first_layer_fan" value="20" oninput="autoUpdate()"></div>
+                        <div class="input-group"><label title="Fan speed during the fillet transition [%]">Fillet Fan [%]</label><input type="number" id="fillet_fan" value="80" oninput="autoUpdate()"></div>
+                        <div class="input-group"><label title="Fan speed for the vertical walls [%]">Wall Fan [%]</label><input type="number" id="wall_fan" value="60" oninput="autoUpdate()"></div>
+                        <div class="input-group"><label title="Diameter of your filament [mm]">Filament Diameter [mm]</label><input type="number" id="filament_dia" value="1.75" step="0.01" oninput="autoUpdate()"></div>
+                    </div>
+                </div>
+
+                <div class="setting-card">
+                    <div class="section-title">Temps & Ironing</div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="input-group"><label title="Heated bed temperature [°C]">Bed Temp [°C]</label><input type="number" id="bed_temp" value="65" oninput="autoUpdate()"></div>
+                        <div class="input-group"><label title="Nozzle temperature for the first layer section [°C]">First layer Temp [°C]</label><input type="number" id="first_layer_temp" value="195" oninput="autoUpdate()"></div>
+                        <div class="input-group"><label title="Nozzle temperature for the walls [°C]">Wall Temp [°C]</label><input type="number" id="wall_temp" value="200" oninput="autoUpdate()"></div>
+                        <div class="input-group"><label title="Number of ironing rotations at the top [revs]">Ironing distance [revs]</label><input type="number" id="ironing_revolutions" value="0.2" step="0.05" oninput="autoUpdate()"></div>
+                        <div class="input-group"><label title="How much to lift the Z-axis during ironing [mm]">Ironing Lift [mm]</label><input type="number" id="ironing_lift" value="0.0" step="0.05" oninput="autoUpdate()"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-8 space-y-4">
+                <div id="canvas-container">
+                    <div class="absolute top-4 left-4 bg-slate-900/80 text-[#f3f4f6] p-4 rounded-lg text-xs space-y-2 z-10 font-mono border border-slate-700">
+                        <div>Time: <span id="stat-time" class="stat-val">--</span></div>
+                        <div>Velocity: <span id="stat-speed" class="stat-val">--</span></div>
+                        <div>Filament: <span id="stat-filament" class="stat-val">--</span></div>
+                        <div id="stat-warning" class="text-orange-400 font-bold"></div>
+                    </div>
+                    <div class="absolute bottom-4 right-4 z-10">
+                        <button onclick="downloadGCode()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full shadow-2xl flex items-center gap-2">
+                            <span>DOWNLOAD G-CODE</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="section-title">Machine Profiles</div>
+                        <select id="printer_select" onchange="loadPrinterProfile()" class="w-1/3 bg-gray-700 border-gray-600 text-gray-100">
+                            <option value="bambu_a1">Bambu Lab A1</option>
+                            <option value="generic">Generic Marlin</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label>Start G-Code</label><textarea id="start_gcode" placeholder="G28..."></textarea></div>
+                        <div><label>End G-Code</label><textarea id="end_gcode" placeholder="M104 S0..."></textarea></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+        let scene, camera, renderer, controls, container_line;
+        let generatedGCode = "";
+        let updateTimeout;
+
+        const PRINTER_PROFILES = {
+            bambu_a1: {
+                start: `; Bambu A1 Start
+; EXECUTABLE_BLOCK_START
+M73 P0 R13
+M201 X12000 Y12000 Z1500 E5000
+M203 X500 Y500 Z30 E30
+M204 P12000 R5000 T12000
+M205 X9.00 Y9.00 Z3.00 E3.00 ; sets the jerk limits, mm/sec
+; FEATURE: Custom
+;===== machine: A1 =========================
+G392 S0
+M9833.2
+;M400
+;M73 P1.717
+
+;===== start to heat heatbead&hotend==========
+M1002 gcode_claim_action : 2
+M1002 set_filament_type:PLA
+M104 S140
+M140 S65
+
+;=====avoid end stop =================
+G91
+G380 S2 Z40 F1200
+G380 S3 Z-15 F1200
+G90
+
+;===== reset machine status =================
+;M290 X39 Y39 Z8
+M204 S6000
+
+M630 S0 P0
+G91
+M17 Z0.3 ; lower the z-motor current
+
+G90
+M17 X0.65 Y1.2 Z0.6 ; reset motor current to default
+M960 S5 P1 ; turn on logo lamp
+G90
+M220 S100 ;Reset Feedrate
+M221 S100 ;Reset Flowrate
+M73.2   R1.0 ;Reset left time magnitude
+;M211 X0 Y0 Z0 ; turn off soft endstop to prevent protential logic problem
+
+;====== cog noise reduction=================
+M982.2 S1 ; turn on cog noise reduction
+
+M1002 gcode_claim_action : 13
+
+G28 X
+G91
+G1 Z5 F1200
+G90
+G0 X128 F30000
+G0 Y254 F3000
+G91
+G1 Z-5 F1200
+
+M109 S25 H140
+
+M17 E0.3
+M83
+G1 E10 F1200
+G1 E-0.5 F30
+M17 D
+
+G28 Z P0 T140; home z with low precision,permit 300deg temperature
+M104 S200
+
+M1002 judge_flag build_plate_detect_flag
+M622 S1
+    G39.4
+    G90
+    G1 Z5 F1200
+M623
+
+;M400
+;M73 P1.717
+
+;===== prepare print temperature and material ==========
+M1002 gcode_claim_action : 24
+
+M400
+;G392 S1
+M211 X0 Y0 Z0 ;turn off soft endstop
+M975 S1 ; turn on
+
+G90
+G1 X-28.5 F30000
+G1 X-48.2 F3000
+
+M620 M ;enable remap
+M620 S0A   ; switch material if AMS exist
+    M1002 gcode_claim_action : 4
+    M400
+    M1002 set_filament_type:UNKNOWN
+    M109 S200
+    M104 S250
+    M400
+    T0
+    G1 X-48.2 F3000
+M73 P1 R13
+    M400
+
+    M620.1 E F374.174 T240
+    M109 S250 ;set nozzle to common flush temp
+    M106 P1 S0
+    G92 E0
+    G1 E50 F200
+    M400
+    M1002 set_filament_type:PLA
+M621 S0A
+
+M109 S240 H300
+G92 E0
+G1 E50 F200 ; lower extrusion speed to avoid clog
+M73 P2 R13
+M400
+M106 P1 S178
+G92 E0
+G1 E5 F200
+M73 P4 R13
+M104 S200
+G92 E0
+G1 E-0.5 F300
+
+G1 X-28.5 F30000
+G1 X-48.2 F3000
+G1 X-28.5 F30000 ;wipe and shake
+G1 X-48.2 F3000
+G1 X-28.5 F30000 ;wipe and shake
+M73 P5 R12
+G1 X-48.2 F3000
+
+;G392 S0
+
+M400
+M106 P1 S0
+;===== prepare print temperature and material end =====
+
+;M400
+;M73 P1.717
+
+;===== auto extrude cali start =========================
+M975 S1
+;G392 S1
+
+G90
+M83
+T1000
+G1 X-48.2 Y0 Z10 F10000
+M400
+M1002 set_filament_type:UNKNOWN
+
+M412 S1 ;  ===turn on  filament runout detection===
+M400 P10
+M620.3 W1; === turn on filament tangle detection===
+M400 S2
+
+M1002 set_filament_type:PLA
+
+;M1002 set_flag extrude_cali_flag=1
+M1002 judge_flag extrude_cali_flag
+
+M622 J1
+    M1002 gcode_claim_action : 8
+
+    M109 S200
+    G1 E10 F375
+    M983 F6.25 A0.3 H2; cali dynamic extrusion compensation
+
+    M106 P1 S255
+    M400 S5
+    G1 X-28.5 F18000
+M73 P6 R12
+    G1 X-48.2 F3000
+    G1 X-28.5 F18000 ;wipe and shake
+    G1 X-48.2 F3000
+    G1 X-28.5 F12000 ;wipe and shake
+    G1 X-48.2 F3000
+    M400
+    M106 P1 S0
+
+    M1002 judge_last_extrude_cali_success
+    M622 J0
+        M983 F6.25 A0.3 H2; cali dynamic extrusion compensation
+        M106 P1 S255
+        M400 S5
+        G1 X-28.5 F18000
+        G1 X-48.2 F3000
+M73 P7 R12
+        G1 X-28.5 F18000 ;wipe and shake
+        G1 X-48.2 F3000
+        G1 X-28.5 F12000 ;wipe and shake
+        M400
+        M106 P1 S0
+    M623
+    
+    G1 X-48.2 F3000
+    M400
+    M984 A0.1 E1 S1 F6.25 H2
+    M106 P1 S178
+    M400 S7
+    G1 X-28.5 F18000
+    G1 X-48.2 F3000
+M73 P39 R8
+    G1 X-28.5 F18000 ;wipe and shake
+    G1 X-48.2 F3000
+    G1 X-28.5 F12000 ;wipe and shake
+    G1 X-48.2 F3000
+    M400
+    M106 P1 S0
+M623 ; end of "draw extrinsic para cali paint"
+
+;G392 S0
+;===== auto extrude cali end ========================
+
+;M400
+;M73 P1.717
+
+M104 S170 ; prepare to wipe nozzle
+M106 S255 ; turn on fan
+
+;M400
+;M73 P1.717
+
+;===== wipe nozzle ===============================
+M1002 gcode_claim_action : 14
+
+M975 S1
+M106 S255 ; turn on fan (G28 has turn off fan)
+M211 S; push soft endstop status
+M211 X0 Y0 Z0 ;turn off Z axis endstop
+
+;===== remove waste by touching start =====
+
+M104 S170 ; set temp down to heatbed acceptable
+
+M83
+G1 E-1 F500
+G90
+M83
+
+M109 S170
+G0 X108 Y-0.5 F30000
+G380 S3 Z-5 F1200
+G1 Z2 F1200
+G1 X110 F10000
+G380 S3 Z-5 F1200
+G1 Z2 F1200
+G1 X112 F10000
+G380 S3 Z-5 F1200
+G1 Z2 F1200
+G1 X114 F10000
+G380 S3 Z-5 F1200
+G1 Z2 F1200
+G1 X116 F10000
+G380 S3 Z-5 F1200
+G1 Z2 F1200
+G1 X118 F10000
+G380 S3 Z-5 F1200
+G1 Z2 F1200
+G1 X120 F10000
+G380 S3 Z-5 F1200
+G1 Z2 F1200
+G1 X122 F10000
+G380 S3 Z-5 F1200
+G1 Z2 F1200
+G1 X124 F10000
+G380 S3 Z-5 F1200
+G1 Z2 F1200
+G1 X126 F10000
+G380 S3 Z-5 F1200
+G1 Z2 F1200
+G1 X128 F10000
+G380 S3 Z-5 F1200
+G1 Z2 F1200
+G1 X130 F10000
+G380 S3 Z-5 F1200
+G1 Z2 F1200
+G1 X132 F10000
+G380 S3 Z-5 F1200
+G1 Z2 F1200
+G1 X134 F10000
+G380 S3 Z-5 F1200
+G1 Z2 F1200
+G1 X136 F10000
+G380 S3 Z-5 F1200
+G1 Z2 F1200
+G1 X138 F10000
+G380 S3 Z-5 F1200
+G1 Z2 F1200
+G1 X140 F10000
+G380 S3 Z-5 F1200
+G1 Z2 F1200
+G1 X142 F10000
+G380 S3 Z-5 F1200
+G1 Z2 F1200
+G1 X144 F10000
+G380 S3 Z-5 F1200
+G1 Z2 F1200
+G1 X146 F10000
+G380 S3 Z-5 F1200
+G1 Z2 F1200
+G1 X148 F10000
+G380 S3 Z-5 F1200
+
+G1 Z5 F30000
+;===== remove waste by touching end =====
+
+G1 Z10 F1200
+G0 X118 Y261 F30000
+G1 Z5 F1200
+M109 S150
+
+G28 Z P0 T300; home z with low precision,permit 300deg temperature
+G29.2 S0 ; turn off ABL
+M104 S140 ; prepare to abl
+G0 Z5 F20000
+
+G0 X128 Y261 F20000  ; move to exposed steel surface
+G0 Z-1.01 F1200      ; stop the nozzle
+
+G91
+G2 I1 J0 X2 Y0 F2000.1
+G2 I-0.75 J0 X-1.5
+G2 I1 J0 X2
+G2 I-0.75 J0 X-1.5
+G2 I1 J0 X2
+G2 I-0.75 J0 X-1.5
+G2 I1 J0 X2
+G2 I-0.75 J0 X-1.5
+G2 I1 J0 X2
+G2 I-0.75 J0 X-1.5
+G2 I1 J0 X2
+G2 I-0.75 J0 X-1.5
+G2 I1 J0 X2
+G2 I-0.75 J0 X-1.5
+G2 I1 J0 X2
+G2 I-0.75 J0 X-1.5
+G2 I1 J0 X2
+G2 I-0.75 J0 X-1.5
+G2 I1 J0 X2
+G2 I-0.75 J0 X-1.5
+
+G90
+G1 Z10 F1200
+
+;===== brush material wipe nozzle =====
+
+G90
+G1 Y250 F30000
+G1 X55
+G1 Z1.300 F1200
+G1 Y262.5 F6000
+G91
+G1 X-35 F30000
+G1 Y-0.5
+G1 X45
+G1 Y-0.5
+G1 X-45
+G1 Y-0.5
+M73 P40 R8
+G1 X45
+G1 Y-0.5
+G1 X-45
+G1 Y-0.5
+G1 X45
+G1 Z5.000 F1200
+
+G90
+G1 X30 Y250.000 F30000
+G1 Z1.300 F1200
+G1 Y262.5 F6000
+G91
+G1 X35 F30000
+G1 Y-0.5
+G1 X-45
+G1 Y-0.5
+G1 X45
+G1 Y-0.5
+G1 X-45
+G1 Y-0.5
+G1 X45
+G1 Y-0.5
+G1 X-45
+G1 Z10.000 F1200
+
+;===== brush material wipe nozzle end =====
+
+G90
+;G0 X128 Y261 F20000  ; move to exposed steel surface
+G1 Y250 F30000
+G1 X138
+G1 Y261
+G0 Z-1.01 F1200      ; stop the nozzle
+
+G91
+G2 I1 J0 X2 Y0 F2000.1
+G2 I-0.75 J0 X-1.5
+G2 I1 J0 X2
+G2 I-0.75 J0 X-1.5
+G2 I1 J0 X2
+G2 I-0.75 J0 X-1.5
+G2 I1 J0 X2
+G2 I-0.75 J0 X-1.5
+G2 I1 J0 X2
+G2 I-0.75 J0 X-1.5
+G2 I1 J0 X2
+G2 I-0.75 J0 X-1.5
+G2 I1 J0 X2
+G2 I-0.75 J0 X-1.5
+G2 I1 J0 X2
+G2 I-0.75 J0 X-1.5
+G2 I1 J0 X2
+G2 I-0.75 J0 X-1.5
+G2 I1 J0 X2
+G2 I-0.75 J0 X-1.5
+
+M109 S140
+M106 S255 ; turn on fan (G28 has turn off fan)
+
+M211 R; pop softend status
+
+;===== wipe nozzle end ================================
+
+;M400
+;M73 P1.717
+
+;===== bed leveling ==================================
+M1002 judge_flag g29_before_print_flag
+
+G90
+G1 Z5 F1200
+G1 X0 Y0 F30000
+G29.2 S1 ; turn on ABL
+
+M190 S65; ensure bed temp
+M109 S140
+M106 S0 ; turn off fan , too noisy
+
+M622 J1
+    M1002 gcode_claim_action : 1
+    G29 A1 X106.691 Y111.359 I55.5994 J55.5926
+    M400
+    M500 ; save cali data
+M623
+;===== bed leveling end ================================
+
+;===== home after wipe mouth============================
+M1002 judge_flag g29_before_print_flag
+M622 J0
+
+    M1002 gcode_claim_action : 13
+    G28
+
+M623
+
+;===== home after wipe mouth end =======================
+
+;M400
+;M73 P1.717
+
+G1 X108.000 Y-0.500 F30000
+G1 Z0.300 F1200
+M400
+G2814 Z0.32
+
+M104 S200 ; prepare to print
+
+;===== extrude cali test ===============================
+
+M400
+    M900 S
+    M900 C
+    G90
+    M83
+
+    M109 S200
+    G0 X128 E8  F900
+    G0 X133 E.3742  F1500
+M73 P41 R8
+    G0 X138 E.3742  F6000
+    G0 X143 E.3742  F1500
+    G0 X148 E.3742  F6000
+    G0 X153 E.3742  F1500
+    G91
+    G1 X1 Z-0.300
+    G1 X4
+    G1 Z1 F1200
+    G90
+    M400
+
+M900 R
+
+M1002 judge_flag extrude_cali_flag
+M622 J1
+    G90
+    G1 X108.000 Y1.000 F30000
+    G91
+    G1 Z-0.700 F1200
+    G90
+    M83
+    G0 X128 E10  F900
+    G0 X133 E.3742  F1500
+    G0 X138 E.3742  F6000
+    G0 X143 E.3742  F1500
+    G0 X148 E.3742  F6000
+    G0 X153 E.3742  F1500
+    G91
+    G1 X1 Z-0.300
+    G1 X4
+    G1 Z1 F1200
+    G90
+    M400
+M623
+
+G1 Z0.2
+
+;M400
+;M73 P1.717
+
+;========turn off light and wait extrude temperature =============
+M1002 gcode_claim_action : 0
+M400
+
+;===== for Textured PEI Plate , lower the nozzle as the nozzle was touching topmost of the texture when homing ==
+;curr_bed_type=Textured PEI Plate
+
+G29.1 Z-0.02 ; for Textured PEI Plate
+
+
+M960 S1 P0 ; turn off laser
+M960 S2 P0 ; turn off laser
+M106 S0 ; turn off fan
+M106 P2 S0 ; turn off big fan
+M106 P3 S0 ; turn off chamber fan
+
+M975 S1 ; turn on mech mode supression
+G90
+M83
+T1000
+
+M211 X0 Y0 Z0 ;turn off soft endstop
+;G392 S1 ; turn on clog detection
+M1007 S1 ; turn on mass estimation
+`,
+                end: `; Bambu A1 End
+; move to safe Z height
+G91
+G1 Z20 F1200
+G90
+
+G392 S0 ;turn off nozzle clog detect
+
+M400 ; wait for buffer to clear
+G92 E0 ; zero the extruder
+G1 E-0.8 F1800 ; retract
+G1 X-13.0 F3000 ; move to safe pos
+
+M140 S0 ; turn off bed
+M106 S0 ; turn off fan
+M106 P2 S0 ; turn off remote part cooling fan
+M106 P3 S0 ; turn off chamber cooling fan
+
+;G1 X27 F15000 ; wipe
+
+M104 S0 ; turn off hotend
+
+M400 ; wait all motion done
+M17 S
+M17 Z0.4 ; lower z motor current to reduce impact if there is something in the bottom
+
+    G1 Z111.2 F600
+    G1 Z109.2
+M73 P99 R0
+
+M400 P100
+M17 R ; restore z current
+
+G90
+G1 X-48 Y180 F3600
+M73 P100 R0
+
+M220 S100  ; Reset feedrate magnitude
+M201.2 K1.0 ; Reset acc magnitude
+M73.2   R1.0 ;Reset left time magnitude
+M1002 set_gcode_claim_speed_level : 0
+
+;M17 X0.8 Y0.8 Z0.5 ; lower motor current to 45% power
+M400
+M18 X Y Z
+
+M73 P100 R0
+; EXECUTABLE_BLOCK_END
+`
+            },
+            generic: {
+                start: `; Generic Start
+G28
+G90
+M83
+M104 S200
+M140 S60
+        `,
+                end: `; Generic End
+G28 X0 Y0
+M104 S0
+M140 S0
+M84
+        `
+            }
+        };
+
+        function initThree() {
+            scene = new THREE.Scene();
+            const aspect = 800 / 600;
+            const frustumSize = 125; // Adjust this value to "zoom" in or out
+            camera = new THREE.OrthographicCamera(frustumSize * aspect / -2, frustumSize * aspect / 2, frustumSize / 2, frustumSize / -2, 0.1, 2000);
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            const container = document.getElementById('canvas-container');
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+            scene.add(new THREE.GridHelper(200, 20, 0x334155, 0x1e293b));
+            camera.position.set(130, 130, 130);
+            camera.lookAt(0, 0, 0);
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            
+            loadPrinterProfile();
+            animate();
+            generate();
+        }
+
+        function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
+        function autoUpdate() { clearTimeout(updateTimeout); updateTimeout = setTimeout(generate, 300); }
+        function loadPrinterProfile() {
+            const p = document.getElementById('printer_select').value;
+            document.getElementById('start_gcode').value = PRINTER_PROFILES[p].start;
+            document.getElementById('end_gcode').value = PRINTER_PROFILES[p].end;
+        }
+
+        function generate() {
+            // 1. INPUTS
+            const diameter = parseFloat(document.getElementById('diameter').value);
+            const height = parseFloat(document.getElementById('height').value);
+            const line_width = parseFloat(document.getElementById('line_width').value);
+            const first_layer_line_width = parseFloat(document.getElementById('first_layer_line_width').value);
+            const layer_height = parseFloat(document.getElementById('layer_height').value);
+            const first_layer_height = parseFloat(document.getElementById('first_layer_height').value);
+            const flow_rate = parseFloat(document.getElementById('flow_rate').value) / 100;
+            const first_layer_flow_rate = parseFloat(document.getElementById('first_layer_flow_rate').value) / 100;
+            const flow_limit = parseFloat(document.getElementById('flow_limit').value);
+            const velocity_limit = parseFloat(document.getElementById('velocity_limit').value);
+            const fillet_radius = parseFloat(document.getElementById('fillet_radius').value);
+            const filament_diameter = parseFloat(document.getElementById('filament_dia').value);
+            const first_layer_fan = parseFloat(document.getElementById('first_layer_fan').value);
+            const fillet_fan = parseFloat(document.getElementById('fillet_fan').value);
+            const wall_fan = parseFloat(document.getElementById('wall_fan').value);
+            const ironing_revolutions = parseFloat(document.getElementById('ironing_revolutions').value);
+            const ironing_lift = parseFloat(document.getElementById('ironing_lift').value);
+            const center_fill_amount = parseFloat(document.getElementById('center_fill_amount').value);
+            
+            const center_x = 128, center_y = 128;
+            const outer_radius = diameter / 2;
+            const inner_radius = outer_radius - fillet_radius;
+
+            // 2. FLOW CALCULATIONS
+            const getArea = (width, height) => ((width - height) * height) + (Math.PI * Math.pow(height / 2, 2));
+            const area_base_eff = getArea(first_layer_line_width, first_layer_height) * first_layer_flow_rate;
+            const area_rest_eff = getArea(line_width, layer_height) * flow_rate;
+
+            let first_layer_velocity = flow_limit / area_base_eff;
+            let wall_velocity = flow_limit / area_rest_eff;
+            let velocity = Math.min(first_layer_velocity, wall_velocity);
+            
+            if (velocity > velocity_limit) {
+                velocity = velocity_limit;
+                flow_limit = velocity * Math.min(area_base_eff, area_rest_eff);
+                document.getElementById('stat-warning').innerText = "Limit: velocity";
+            }
+            else {
+                document.getElementById('stat-warning').innerText = "";
+            }
+
+            const area_filament = Math.PI * Math.pow(filament_diameter / 2, 2);
+            const e_per_mm_base = area_base_eff / area_filament * first_layer_flow_rate;
+            const e_per_mm_rest = area_rest_eff / area_filament * flow_rate;
+            const e_center_fill = center_fill_amount / area_filament;
+            
+            // 3. GENERATION
+            let gcode = "; Spiral Container Generated\n" + document.getElementById('start_gcode').value + "\n";
+            gcode += `G21 ; set units to millimeters\n`;
+            gcode += `G90 ; use absolute coordinates\n`;
+            gcode += `M83 ; use relative extrusion mode\n`;
+            //gcode += `M204 S500 ; \n`;
+            gcode += `G1 E-0.8 F1800 ; retract\n`;
+            gcode += `G1 Z1 F12000 ; lift to safe height\n`;
+            gcode += `G1 F${Math.floor(velocity * 60)}\n`;
+            gcode += `M109 S${document.getElementById('first_layer_temp').value}\n`;
+            gcode += `M190 S${document.getElementById('bed_temp').value}\n`;
+
+            let points = [];
+            let lastX = center_x, lastY = center_y, lastZ = first_layer_height;
+            let last_fan = 0;
+            let total_length = 0;
+            let total_filament = 0;
+
+            const addMove = (nx, ny, nz, e_rate, fan, isIroning=false) => {
+                let dist = Math.sqrt(Math.pow(nx-lastX,2) + Math.pow(ny-lastY,2) + Math.pow(nz-lastZ,2));
+                points.push(new THREE.Vector3(nx-center_x, nz, ny-center_y));
+                
+                gcode += `G1 X${nx.toFixed(3)} Y${ny.toFixed(3)} Z${nz.toFixed(3)} E${(dist * e_rate).toFixed(5)}\n`;
+                
+                total_length += dist;
+                total_filament += (dist * e_rate);
+                if (fan !== undefined && Math.abs(fan - last_fan) > 5) {
+                    gcode += `M106 S${Math.floor(fan * 2.55)}\n`;
+                    last_fan = fan;
+                }
+                lastX = nx; lastY = ny; lastZ = nz;
+            };
+
+            // Center Deposit (fast move, prime, plug, restore speed)
+            gcode += `G0 X${center_x} Y${center_y} Z${first_layer_height} F5000\n`;      // rapid to center
+            gcode += `G1 E0.8 F1800\n`;                                     // basic prime
+            if (center_fill_amount > 0) {
+                gcode += `G1 E${e_center_fill.toFixed(5)} F300\n`;                  // slow center plug
+                gcode += `G4 P100\n`;                                       // short dwell
+                total_filament += e_center_fill;
+            }
+            gcode += `G1 F${Math.floor(velocity * 60)}\n`;             // restore print speed
+            points.push(new THREE.Vector3(0, first_layer_height, 0));
+
+            // A. BASE
+            const base_revs = inner_radius / first_layer_line_width;
+            const base_steps = Math.floor(base_revs * 360);
+            for (let i = 1; i <= base_steps; i++) {
+                let p = i / base_steps;
+                let r = p * inner_radius;
+                let t = p * base_revs * 2 * Math.PI;
+                addMove(center_x + r * Math.cos(t), center_y + r * Math.sin(t), first_layer_height, e_per_mm_base, p * first_layer_fan);
+                var current_theta = t;
+            }
+
+            gcode += `M104 S${document.getElementById('wall_temp').value}\n`;
+
+            // B. FILLET
+            const fillet_steps = Math.floor((fillet_radius / layer_height) * 360);
+            const fillet_revs = fillet_radius / layer_height;
+            for (let i = 1; i <= fillet_steps; i++) {
+                let p = i / fillet_steps;
+                let phi = p * (Math.PI / 2);
+                let r = inner_radius + (fillet_radius * Math.sin(phi));
+                let nz = first_layer_height + (fillet_radius * (1 - Math.cos(phi)));
+                let t = current_theta + (p * fillet_revs * 2 * Math.PI);
+                addMove(center_x + r * Math.cos(t), center_y + r * Math.sin(t), nz, e_per_mm_rest, first_layer_fan + (fillet_fan-first_layer_fan)*p);
+                var last_theta = t;
+            }
+
+            // C. WALLS
+            const remaining_height = height - lastZ;
+            const wall_steps = Math.floor((remaining_height / layer_height) * 360);
+            const wall_revs = remaining_height / layer_height;
+            const z_wall_start = lastZ;
+            for (let i = 1; i <= wall_steps; i++) {
+                let p = i / wall_steps;
+                let t = last_theta + (p * wall_revs * 2 * Math.PI);
+                addMove(center_x + outer_radius * Math.cos(t), center_y + outer_radius * Math.sin(t), z_wall_start + (p * remaining_height), e_per_mm_rest, fillet_fan + (wall_fan-fillet_fan)*p);
+                var final_theta = t;
+            }
+
+            // D. TOP CLOSURE
+            const closureZ = lastZ;
+            for (let i = 1; i <= 360; i++) {
+                let p = i / 360;
+                let t = final_theta + (p * 2 * Math.PI);
+                let ramp = 1.0 - (0.95 * Math.pow(p, 1.5));
+                addMove(center_x + outer_radius * Math.cos(t), center_y + outer_radius * Math.sin(t), closureZ, e_per_mm_rest * ramp);
+                var iron_theta_start = t;
+            }
+
+            // E. IRONING
+            if (ironing_revolutions > 0) {
+                const i_steps = Math.floor(ironing_revolutions * 360);
+                const z_start = lastZ;
+                for (let i = 1; i <= i_steps; i++) {
+                    let p = i / i_steps;
+                    let t = iron_theta_start + (p * ironing_revolutions * 2 * Math.PI);
+                    addMove(center_x + outer_radius * Math.cos(t), center_y + outer_radius * Math.sin(t), z_start + (ironing_lift * p), 0);
+                }
+            }
+
+            gcode += `G1 E-0.8 F1800\n` + document.getElementById('end_gcode').value;
+            gcode += 'G91\nG1 Z20 F1200 ; move to safe Z height\nG90\n';
+            generatedGCode = gcode;
+
+            // 4. STATS & VISUALS
+            if (container_line) scene.remove(container_line);
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            container_line = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: 0xef4444, linewidth: 2 }));
+            scene.add(container_line);
+
+            document.getElementById('stat-time').innerText = `${(total_length / velocity / 60).toFixed(1)} min`;
+            document.getElementById('stat-speed').innerText = `${velocity.toFixed(1)} mm/s`;
+            document.getElementById('stat-filament').innerText = `${(total_filament*area_filament*0.00124).toFixed(1)} g`;
+        }
+
+        function downloadGCode() {
+            const blob = new Blob([generatedGCode], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `spiral_container_dia${document.getElementById('diameter').value}mm_h${document.getElementById('height').value}mm.gcode`;
+            a.click();
+        }
+
+        window.onload = initThree;
+        window.onresize = () => {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        };
+        </script>
+    </body>
+    <footer class="max-w-[1600px] mx-auto p-6 mt-4 border-t border-slate-200">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-6 bg-gray-800 p-6 rounded-2xl shadow-sm border border-slate-100">
+            
+            <div class="space-y-1 text-center md:text-left">
+                <h3 class="font-bold text-slate-200 text-lg">Support&nbsp;&nbsp;<span style="font-family: Consolas;">Stijns Projects</span></h3>
+                <p class="text-base text-slate-400">If this tool helped your print, consider supporting future development!</p>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-center gap-4">
+                <a href="https://www.youtube.com/@stijnsprojects" target="_blank" class="flex items-center gap-2 bg-[#FF0000] hover:bg-[#CC0000] text-white font-bold py-2.5 px-6 rounded-lg transition-transform hover:scale-105 shadow-md">
+                    <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                    YouTube
+                </a>
+
+                <a href="https://www.paypal.com/donate/?hosted_button_id=KAXFV8A59BAWE" target="_blank" class="flex items-center gap-2 bg-[#FFC439] hover:bg-[#FFB81C] text-slate-900 font-bold py-2.5 px-6 rounded-lg transition-transform hover:scale-105 shadow-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="0.85em" height="1em" viewBox="0 0 256 302"><path fill="#27346A" d="M217.168 23.507C203.234 7.625 178.046.816 145.823.816h-93.52A13.39 13.39 0 0 0 39.076 12.11L.136 259.077c-.774 4.87 2.997 9.28 7.933 9.28h57.736l14.5-91.971l-.45 2.88c1.033-6.501 6.593-11.296 13.177-11.296h27.436c53.898 0 96.101-21.892 108.429-85.221c.366-1.873.683-3.696.957-5.477q-2.334-1.236 0 0c3.671-23.407-.025-39.34-12.686-53.765"/><path fill="#27346A" d="M102.397 68.84a11.7 11.7 0 0 1 5.053-1.14h73.318c8.682 0 16.78.565 24.18 1.756a102 102 0 0 1 6.177 1.182a90 90 0 0 1 8.59 2.347c3.638 1.215 7.026 2.63 10.14 4.287c3.67-23.416-.026-39.34-12.687-53.765C203.226 7.625 178.046.816 145.823.816H52.295C45.71.816 40.108 5.61 39.076 12.11L.136 259.068c-.774 4.878 2.997 9.282 7.925 9.282h57.744L95.888 77.58a11.72 11.72 0 0 1 6.509-8.74"/><path fill="#2790C3" d="M228.897 82.749c-12.328 63.32-54.53 85.221-108.429 85.221H93.024c-6.584 0-12.145 4.795-13.168 11.296L61.817 293.621c-.674 4.262 2.622 8.124 6.934 8.124h48.67a11.71 11.71 0 0 0 11.563-9.88l.474-2.48l9.173-58.136l.591-3.213a11.71 11.71 0 0 1 11.562-9.88h7.284c47.147 0 84.064-19.154 94.852-74.55c4.503-23.15 2.173-42.478-9.739-56.054c-3.613-4.112-8.1-7.508-13.327-10.28c-.283 1.79-.59 3.604-.957 5.477"/><path fill="#1F264F" d="M216.952 72.128a90 90 0 0 0-5.818-1.49a110 110 0 0 0-6.177-1.174c-7.408-1.199-15.5-1.765-24.19-1.765h-73.309a11.6 11.6 0 0 0-5.053 1.149a11.68 11.68 0 0 0-6.51 8.74l-15.582 98.798l-.45 2.88c1.025-6.501 6.585-11.296 13.17-11.296h27.444c53.898 0 96.1-21.892 108.428-85.221c.367-1.873.675-3.688.958-5.477q-4.682-2.47-10.14-4.279a83 83 0 0 0-2.77-.865"/></svg>
+                    PayPal
+                </a>
+            </div>
+
+        </div>
+    </footer>
+</html>
