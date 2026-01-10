@@ -927,7 +927,7 @@ M84
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `spiral_container_dia${document.getElementById('diameter').value}mm_h${document.getElementById('height').value}mm.gcode`;
+            a.download = `spiral_container_d${document.getElementById('diameter').value}mm_h${document.getElementById('height').value}mm.gcode`;
             a.click();
         }
 
@@ -964,3 +964,4 @@ M84
     </footer>
 
 </html>
+
